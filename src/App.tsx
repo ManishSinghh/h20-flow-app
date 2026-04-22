@@ -84,6 +84,14 @@ export default function App() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  
+  // Audio for notifications
+  const notificationSound = useMemo(() => new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'), []);
+
+  const playSound = () => {
+    notificationSound.currentTime = 0;
+    notificationSound.play().catch(e => console.error("Audio play failed:", e));
+  };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -243,9 +251,10 @@ export default function App() {
         const diff = (now - lastReminder) / (1000 * 60);
 
         if (diff >= intervalMinutes) {
-          new Notification('HydraTrack', {
+          playSound();
+          new Notification('H20-FLow', {
             body: 'Time to drink some water! Stay hydrated.',
-            icon: '/favicon.ico'
+            icon: 'https://cdn-icons-png.flaticon.com/512/3105/3105807.png'
           });
           setLastReminder(now);
         }
@@ -501,9 +510,19 @@ export default function App() {
                 <section className="bg-slate-900/50 rounded-[2.5rem] border border-slate-800 p-8 flex-grow">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">Reminder Status</h2>
-                    <button onClick={requestNotificationPermission} className={`p-2 rounded-xl transition-all ${notificationsEnabled ? 'text-sky-400 bg-sky-400/10' : 'text-slate-500 bg-slate-800'}`}>
-                      {notificationsEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={playSound}
+                        className="p-2 rounded-xl text-slate-500 bg-slate-800 hover:text-sky-400 transition-all flex items-center gap-2"
+                        title="Test Sound"
+                      >
+                        <Bell className="w-4 h-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-tight pr-1">Test</span>
+                      </button>
+                      <button onClick={requestNotificationPermission} className={`p-2 rounded-xl transition-all ${notificationsEnabled ? 'text-sky-400 bg-sky-400/10' : 'text-slate-500 bg-slate-800'}`}>
+                        {notificationsEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between p-5 bg-slate-950/50 rounded-2xl border border-slate-800/50">
                     <div>
