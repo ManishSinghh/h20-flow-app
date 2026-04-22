@@ -44,7 +44,15 @@ import {
   query, 
   orderBy
 } from 'firebase/firestore';
-import { auth, db, signInWithGoogle, logOut, handleFirestoreError } from './lib/firebase';
+import { 
+  auth, 
+  db, 
+  signInWithGoogle, 
+  signInWithEmail, 
+  signUpWithEmail, 
+  logOut, 
+  handleFirestoreError 
+} from './lib/firebase';
 
 interface Entry {
   id: string;
@@ -99,19 +107,29 @@ export default function App() {
     
     try {
       if (authMode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmail(email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await signUpWithEmail(email, password);
       }
     } catch (err: any) {
       console.error('Auth Error:', err);
       let message = 'An error occurred. Please try again.';
-      if (err.code === 'auth/invalid-email') message = 'Invalid email address.';
-      if (err.code === 'auth/user-not-found') message = 'No account found with this email.';
-      if (err.code === 'auth/wrong-password') message = 'Incorrect password.';
-      if (err.code === 'auth/email-already-in-use') message = 'An account already exists with this email.';
-      if (err.code === 'auth/weak-password') message = 'Password should be at least 6 characters.';
-      if (err.code === 'auth/configuration-not-found') message = 'Email/Password sign-in is not enabled. Please enable it in the Firebase Console.';
+      
+      // Handle Firebase error codes
+      if (err.code === 'auth/invalid-email') {
+        message = 'Please enter a valid email address (e.g., name@email.com).';
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        message = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        message = 'This email is already registered. Try logging in instead.';
+      } else if (err.code === 'auth/weak-password') {
+        message = 'Password is too weak. Please use at least 6 characters.';
+      } else if (err.code === 'auth/operation-not-allowed') {
+        message = 'Email sign-in is currently disabled in the Firebase Console.';
+      } else if (err.code === 'auth/too-many-requests') {
+        message = 'Too many failed attempts. Please try again later.';
+      }
+      
       setAuthError(message);
     } finally {
       setAuthLoading(false);
