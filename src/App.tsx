@@ -75,6 +75,10 @@ export default function App() {
   const [lastReminder, setLastReminder] = useState<number>(Date.now());
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Auth Listener
   useEffect(() => {
@@ -83,18 +87,49 @@ export default function App() {
     });
   }, []);
 
-  const handleLogin = async () => {
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setAuthError('Please fill in all fields.');
+      return;
+    }
+    
+    setAuthLoading(true);
+    setAuthError(null);
+    
+    try {
+      if (authMode === 'login') {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
+    } catch (err: any) {
+      console.error('Auth Error:', err);
+      let message = 'An error occurred. Please try again.';
+      if (err.code === 'auth/invalid-email') message = 'Invalid email address.';
+      if (err.code === 'auth/user-not-found') message = 'No account found with this email.';
+      if (err.code === 'auth/wrong-password') message = 'Incorrect password.';
+      if (err.code === 'auth/email-already-in-use') message = 'An account already exists with this email.';
+      if (err.code === 'auth/weak-password') message = 'Password should be at least 6 characters.';
+      if (err.code === 'auth/configuration-not-found') message = 'Email/Password sign-in is not enabled. Please enable it in the Firebase Console.';
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
     setAuthError(null);
     try {
       await signInWithGoogle();
     } catch (err: any) {
       console.error('Auth Error:', err);
       if (err.code === 'auth/popup-blocked') {
-        setAuthError('Sign-in popup was blocked by your browser. Please allow popups and try again.');
+        setAuthError('Sign-in popup was blocked by your browser. Please allow popups.');
       } else if (err.code === 'auth/popup-closed-by-user') {
-        setAuthError('Sign-in was cancelled before completion.');
+        setAuthError('Sign-in was cancelled.');
       } else {
-        setAuthError('Sign-in failed. Please try opening this link in a standard browser (like Chrome or Safari) instead of an in-app viewer (like WhatsApp or Facebook).');
+        setAuthError('Google sign-in failed. Please try a standard browser or use Email/Password.');
       }
     }
   };
@@ -258,36 +293,85 @@ export default function App() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 text-center space-y-8"
+          className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 text-center space-y-6"
         >
-          <div className="bg-sky-500/10 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto">
-            <Droplets className="w-10 h-10 text-sky-500" />
+          <div className="bg-sky-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-2">
+            <Droplets className="w-8 h-8 text-sky-500" />
           </div>
           <div>
-            <h1 className="text-4xl font-light tracking-tight">Hydra<span className="font-semibold text-sky-400">Track</span></h1>
-            <p className="text-slate-400 mt-2 text-sm leading-relaxed">Securely track your daily hydration goal and view your progress from any device.</p>
+            <h1 className="text-3xl font-light tracking-tight">Hydra<span className="font-semibold text-sky-400">Track</span></h1>
+            <p className="text-slate-400 mt-2 text-xs leading-relaxed uppercase tracking-widest font-black">Secure Access</p>
           </div>
 
-          <AnimatePresence>
-            {authError && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-xs text-red-400 leading-relaxed"
-              >
-                {authError}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <form onSubmit={handleAuth} className="space-y-4 pt-4">
+            <div className="space-y-2 text-left">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full p-4 rounded-2xl bg-slate-950/50 border border-slate-800 focus:border-sky-400 outline-none font-medium text-slate-200 transition-all text-sm"
+                required
+              />
+            </div>
+            <div className="space-y-2 text-left">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Password</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full p-4 rounded-2xl bg-slate-950/50 border border-slate-800 focus:border-sky-400 outline-none font-medium text-slate-200 transition-all text-sm"
+                required
+              />
+            </div>
+
+            <AnimatePresence>
+              {authError && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-[11px] text-red-400 leading-relaxed text-left"
+                >
+                  {authError}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button 
+              type="submit"
+              disabled={authLoading}
+              className="w-full py-4 rounded-2xl bg-sky-500 text-slate-950 font-black uppercase tracking-widest text-xs hover:bg-sky-400 active:scale-95 transition-all shadow-xl shadow-sky-500/10 disabled:opacity-50"
+            >
+              {authLoading ? 'Processing...' : authMode === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+
+          <div className="flex items-center gap-4 py-2">
+            <div className="flex-grow h-px bg-slate-800"></div>
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">or</span>
+            <div className="flex-grow h-px bg-slate-800"></div>
+          </div>
 
           <button 
-            onClick={handleLogin}
-            className="w-full py-5 rounded-2xl bg-white text-slate-950 font-bold flex items-center justify-center gap-3 hover:bg-slate-100 transition-all active:scale-95"
+            onClick={handleGoogleLogin}
+            className="w-full py-4 rounded-2xl bg-slate-800 border border-slate-700 text-slate-100 font-bold flex items-center justify-center gap-3 hover:bg-slate-700 transition-all active:scale-95 text-xs"
           >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
             Continue with Google
           </button>
+
+          <p className="text-xs text-slate-500">
+            {authMode === 'login' ? "Don't have an account?" : "Already have an account?"}
+            <button 
+              onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+              className="ml-2 text-sky-400 font-bold hover:underline"
+            >
+              {authMode === 'login' ? 'Sign Up' : 'Log In'}
+            </button>
+          </p>
         </motion.div>
       </div>
     );
