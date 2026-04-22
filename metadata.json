@@ -1,6 +1,6 @@
 {
-  "name": "H2O Flow - Water Reminder",
-  "description": "A simple and elegant water tracking app with customizable reminders to help you stay hydrated throughout the day.",
+  "name": "H20-FLow",
+  "description": "HydraTrack: Your personal hydration companion with smart reminders and insightful trends.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

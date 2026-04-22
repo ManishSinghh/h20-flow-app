@@ -74,6 +74,7 @@ export default function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
   const [lastReminder, setLastReminder] = useState<number>(Date.now());
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Auth Listener
   useEffect(() => {
@@ -81,6 +82,22 @@ export default function App() {
       setUser(u);
     });
   }, []);
+
+  const handleLogin = async () => {
+    setAuthError(null);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      console.error('Auth Error:', err);
+      if (err.code === 'auth/popup-blocked') {
+        setAuthError('Sign-in popup was blocked by your browser. Please allow popups and try again.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setAuthError('Sign-in was cancelled before completion.');
+      } else {
+        setAuthError('Sign-in failed. Please try opening this link in a standard browser (like Chrome or Safari) instead of an in-app viewer (like WhatsApp or Facebook).');
+      }
+    }
+  };
 
   // Fetch User Data & Logs
   useEffect(() => {
@@ -250,8 +267,22 @@ export default function App() {
             <h1 className="text-4xl font-light tracking-tight">Hydra<span className="font-semibold text-sky-400">Track</span></h1>
             <p className="text-slate-400 mt-2 text-sm leading-relaxed">Securely track your daily hydration goal and view your progress from any device.</p>
           </div>
+
+          <AnimatePresence>
+            {authError && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-xs text-red-400 leading-relaxed"
+              >
+                {authError}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <button 
-            onClick={signInWithGoogle}
+            onClick={handleLogin}
             className="w-full py-5 rounded-2xl bg-white text-slate-950 font-bold flex items-center justify-center gap-3 hover:bg-slate-100 transition-all active:scale-95"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
