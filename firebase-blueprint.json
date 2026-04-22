@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User specific settings and daily targets",
+      "type": "object",
+      "properties": {
+        "goal": {
+          "type": "number",
+          "description": "Daily water intake goal in ml"
+        },
+        "intervalMinutes": {
+          "type": "number",
+          "description": "Reminder interval in minutes"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["goal", "intervalMinutes"]
+    },
+    "WaterLog": {
+      "title": "Water Consumption Log",
+      "description": "Individual record of water intake",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Amount of water in ml"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Unix timestamp of consumption"
+        }
+      },
+      "required": ["amount", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user settings"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "WaterLog",
+      "description": "Subcollection for user water logs"
+    }
+  }
+}
